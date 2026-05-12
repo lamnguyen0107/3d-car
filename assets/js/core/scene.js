@@ -86,9 +86,7 @@ export class SceneController {
     this.wheelSpinTargets = [];
     this.wheelSpinAngle = 0;
     this.wheelSpinQuaternion = new THREE.Quaternion();
-    this.wheelSpinSpeed = profile.reducedMotion
-      ? 0
-      : BRAND_CONFIG.model.wheelSpinSpeed * (profile.lowPower ? 0.55 : 1);
+    this.wheelSpinSpeed = BRAND_CONFIG.model.wheelSpinSpeed;
     this.keyLight = null;
 
     this.bindVisibility();

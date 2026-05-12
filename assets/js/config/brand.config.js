@@ -21,6 +21,6 @@ export const BRAND_CONFIG = {
     liftY: 0.18,
     hoverAmplitude: 0.007,
     hoverSpeed: 0.5,
-    wheelSpinSpeed: Math.PI * 1.5
+    wheelSpinSpeed: Math.PI * 8
   }
 };
