@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="ARCHEON NOCTIS R is a stealth-noir 3D flagship website crafted with Three.js, GSAP, and cinematic scroll storytelling."
+    />
+    <title>ARCHEON | NOCTIS R</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Syncopate:wght@400;700&family=Sora:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <div class="noise-layer" aria-hidden="true"></div>
+
+      <div id="scene-shell" aria-hidden="true">
+        <canvas id="experience-canvas"></canvas>
+        <div class="scene-vignette scene-vignette-top"></div>
+        <div class="scene-vignette scene-vignette-bottom"></div>
+      </div>
+
+      <div id="loading-screen" class="loading-screen" role="status" aria-live="polite">
+        <div class="loading-screen__inner">
+          <div class="loading-screen__cluster">
+            <div class="loading-dial" aria-hidden="true">
+              <div class="loading-dial__face"></div>
+              <div class="loading-dial__ticks"></div>
+              <div class="loading-dial__redline"></div>
+              <div id="loading-needle" class="loading-dial__needle"></div>
+              <div class="loading-dial__hub"></div>
+              <div class="loading-dial__readout">
+                <span id="loading-value">000</span>
+                <small>km/h</small>
+              </div>
+              <div class="loading-dial__markers">
+                <span>0</span>
+                <span>170</span>
+                <span>340</span>
+              </div>
+            </div>
+            <div class="loading-screen__copy-block">
+              <p class="eyebrow">Telemetry boot sequence</p>
+              <h1 class="loading-screen__brand" data-brand-name>ARCHEON</h1>
+              <p class="loading-screen__copy">
+                Charging aero maps, syncing traction logic, and arming the redline reveal.
+              </p>
+              <div class="loading-screen__status">
+                <span id="loading-status-label">Ignition sequence</span>
+                <span id="loading-percent">00%</span>
+              </div>
+              <div class="loading-meter" aria-hidden="true">
+                <span id="loading-bar"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <header class="topbar">
+        <a class="topbar__brand" href="#prelude" data-brand-name>ARCHEON</a>
+        <div class="topbar__rail">
+          <div class="topbar__meta">
+            <span>Flagship Prototype</span>
+            <span data-model-name>NOCTIS R</span>
+          </div>
+          <div class="telemetry-pill" aria-live="polite">
+            <span>Drive Mode</span>
+            <strong data-drive-mode>Grid Lock</strong>
+          </div>
+          <button
+            id="sound-toggle"
+            class="sound-toggle"
+            type="button"
+            aria-pressed="false"
+            aria-label="Enable engine audio"
+          >
+            <span class="sound-toggle__label">Engine Audio</span>
+            <span class="sound-toggle__state" data-sound-state>Off</span>
+          </button>
+        </div>
+      </header>
+
+      <main id="app">
+        <section id="prelude" class="panel panel--prelude" data-section="prelude">
+          <div class="panel__content panel__content--opening">
+            <div class="opening-copy" data-reveal>
+              <p class="eyebrow">Private reveal prototype</p>
+              <h1 class="display display--xl" data-hero-line>
+                Velocity, carved from shadow.
+              </h1>
+              <p class="lede opening-lede" data-hero-subline>
+                ARCHEON shapes a sports car experience around silhouette, pressure, and restraint.
+              </p>
+            </div>
+            <div class="opening-footer" data-reveal>
+              <div class="panel__actions">
+                <a class="button button--primary" href="#hero" data-primary-cta>Book a Private Reveal</a>
+                <a class="button button--ghost" href="#performance">View Performance</a>
+              </div>
+              <div class="launch-strip" data-reveal>
+                <article class="launch-strip__cell">
+                  <span>Grid</span>
+                  <strong>Sector 01</strong>
+                </article>
+                <article class="launch-strip__cell">
+                  <span>Boost</span>
+                  <strong>1,020 PS</strong>
+                </article>
+                <article class="launch-strip__cell">
+                  <span>Vector</span>
+                  <strong>Rear Bias</strong>
+                </article>
+              </div>
+              <div class="scroll-cue">
+                <span></span>
+                <p>Scroll to wake the machine</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="hero" class="panel panel--hero" data-section="hero">
+          <div class="panel__content panel__content--hero-orbit">
+            <div class="hero-corner hero-corner--tl" data-reveal>
+              <p class="eyebrow">ARCHEON flagship</p>
+              <h2 class="display display--hero" data-model-name>NOCTIS R</h2>
+            </div>
+            <div class="hero-corner hero-corner--tr" data-reveal>
+              <div class="hero-chip-list">
+                <article class="hero-chip">
+                  <span>Power</span>
+                  <strong>1,020 PS</strong>
+                </article>
+                <article class="hero-chip">
+                  <span>0-100 km/h</span>
+                  <strong>2.3s</strong>
+                </article>
+                <article class="hero-chip">
+                  <span>Top speed</span>
+                  <strong>340 km/h</strong>
+                </article>
+              </div>
+            </div>
+            <div class="hero-corner hero-corner--bl" data-reveal>
+              <p class="lede hero-lede">
+                Mid-engine posture. Redline tone. No wasted drama.
+              </p>
+            </div>
+            <div class="hero-corner hero-corner--br" data-reveal>
+              <div class="panel__actions panel__actions--hero">
+                <a class="button button--primary" href="#performance">Enter the Cockpit</a>
+                <a class="button button--ghost" href="#finale">Private Access</a>
+              </div>
+              <p class="hero-caption">Concept flagship / scroll-driven sequence</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="performance" class="panel panel--performance" data-section="performance">
+          <div class="panel__content panel__content--stage-right">
+            <div class="panel__stage" aria-hidden="true"></div>
+            <div class="panel__copy-stack" data-reveal>
+              <p class="eyebrow">Velocity</p>
+              <h2 class="display">Grip, then release.</h2>
+              <p class="lede">
+                Rear-biased when the road opens. Clean traction when the corner closes.
+              </p>
+              <div class="feature-grid">
+                <article class="feature-card" data-reveal>
+                  <div class="feature-card__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 14l4-4" />
+                      <path d="M4 14a8 8 0 1 1 16 0" />
+                      <path d="M12 18h.01" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span class="feature-card__label">Output</span>
+                    <strong>1,020 PS</strong>
+                    <p>Immediate surge with no soft edge.</p>
+                  </div>
+                </article>
+                <article class="feature-card" data-reveal>
+                  <div class="feature-card__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 12h7" />
+                      <path d="M5 8h10" />
+                      <path d="M8 16h12" />
+                      <path d="M18 6c1.5 0 3 1.2 3 3s-1.5 3-3 3" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span class="feature-card__label">Aero</span>
+                    <strong>Low-drag body</strong>
+                    <p>Pressure managed around the canopy and tail.</p>
+                  </div>
+                </article>
+                <article class="feature-card" data-reveal>
+                  <div class="feature-card__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 3l7 4v5c0 4.2-2.8 8-7 9-4.2-1-7-4.8-7-9V7l7-4z" />
+                      <path d="M9.5 12.5l1.8 1.8 3.7-3.9" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span class="feature-card__label">Control</span>
+                    <strong>Adaptive vector</strong>
+                    <p>Torque split stays calm while the chassis rotates.</p>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="engineering" class="panel panel--engineering" data-section="engineering">
+          <div class="panel__content panel__content--stage-left">
+            <div class="panel__copy-stack" data-reveal>
+              <p class="eyebrow">Craft</p>
+              <h2 class="display">Motion with intent.</h2>
+              <p class="lede">
+                Doors, surfaces, and light cues are timed like mechanical theatre.
+              </p>
+              <div class="feature-grid">
+                <article class="feature-card" data-reveal>
+                  <div class="feature-card__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 20h16" />
+                      <path d="M7 20V9l5-4 5 4v11" />
+                      <path d="M12 5v15" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span class="feature-card__label">Reveal</span>
+                    <strong>Scissor sequence</strong>
+                    <p>Entry opens like a warning shot, not a gesture.</p>
+                  </div>
+                </article>
+                <article class="feature-card" data-reveal>
+                  <div class="feature-card__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 3l8 4-8 4-8-4 8-4z" />
+                      <path d="M4 12l8 4 8-4" />
+                      <path d="M4 17l8 4 8-4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span class="feature-card__label">Shell</span>
+                    <strong>Forged carbon</strong>
+                    <p>High rigidity, lower mass, cleaner pressure flow.</p>
+                  </div>
+                </article>
+                <article class="feature-card" data-reveal>
+                  <div class="feature-card__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z" />
+                      <path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z" />
+                      <path d="M5 14l.8 2.2L8 17l-2.2.8L5 20l-.8-2.2L2 17l2.2-.8L5 14z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span class="feature-card__label">Finish</span>
+                    <strong>Cold optics</strong>
+                    <p>Red bodywork stays sharp under hard night light.</p>
+                  </div>
+                </article>
+              </div>
+            </div>
+            <div class="panel__stage" aria-hidden="true"></div>
+          </div>
+        </section>
+
+        <section id="finale" class="panel panel--finale" data-section="finale">
+          <div class="panel__content panel__content--finale-center">
+            <div class="cta-panel" data-reveal>
+              <p class="eyebrow">Final call</p>
+              <h2 class="display display--lg display--finale">
+                <span class="title-line">See It Before</span>
+                <span class="title-line">The City Does.</span>
+              </h2>
+              <p class="lede">One private session. One machine centered in silence.</p>
+              <div class="panel__actions">
+                <a
+                  class="button button--primary"
+                  href="mailto:reveal@archeon-motors.com?subject=Private%20Reveal%20Request"
+                  data-primary-cta
+                >
+                  Book a Private Reveal
+                </a>
+                <a class="button button--ghost" href="#prelude">Restart Sequence</a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <div id="scene-fallback" class="scene-fallback" hidden>
+        <div class="scene-fallback__panel">
+          <p class="eyebrow">3D scene unavailable</p>
+          <h2 class="display">The narrative is still live.</h2>
+          <p>
+            Your browser could not initialize the interactive scene, so the cinematic layer has been reduced while the flagship story remains fully readable.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <noscript>
+      <div class="noscript-warning">
+        JavaScript is disabled. The 3D scene and scroll choreography need it, but the flagship copy remains available below.
+      </div>
+    </noscript>
+
+    <script type="module" src="/assets/js/main.js"></script>
+  </body>
+</html>
