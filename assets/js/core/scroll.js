@@ -24,6 +24,7 @@ function setActivePanel(sectionId) {
 }
 
 export function setupScrollNarrative(sceneController, profile, audioController = null) {
+  const blendEase = gsap.parseEase('sine.inOut');
   const sections = STORY_CONFIG.sections
     .map((section) => ({
       ...section,
@@ -59,8 +60,8 @@ export function setupScrollNarrative(sceneController, profile, audioController =
   sections.forEach((section, index) => {
     ScrollTrigger.create({
       trigger: section.element,
-      start: index === 0 ? 'top top' : 'top 55%',
-      end: 'bottom 45%',
+      start: index === 0 ? 'top top' : 'top 18%',
+      end: 'bottom 32%',
       onEnter: () => activateSection(index),
       onEnterBack: () => activateSection(index)
     });
@@ -72,22 +73,19 @@ export function setupScrollNarrative(sceneController, profile, audioController =
 
     ScrollTrigger.create({
       trigger: section.element,
-      start: 'top 82%',
-      end: 'top 38%',
+      start: 'top bottom',
+      end: 'top 12%',
       invalidateOnRefresh: true,
       onUpdate: (self) => {
         const progress = profile.reducedMotion
           ? self.progress >= 0.5
             ? 1
             : 0
-          : self.progress;
+          : blendEase(self.progress);
 
         sceneController.setDesiredPose(sceneController.mixPoses(poses[fromIndex], poses[toIndex], progress));
         setActivePanel(progress < 0.5 ? sections[fromIndex].id : section.id);
-        audioController?.setDriveState(
-          progress < 0.5 ? sections[fromIndex].id : section.id,
-          progress
-        );
+        audioController?.setDriveState(sections[fromIndex].id, progress, section.id);
       },
       onLeave: () => activateSection(toIndex),
       onLeaveBack: () => activateSection(fromIndex)

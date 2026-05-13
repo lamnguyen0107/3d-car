@@ -1,15 +1,22 @@
 const STORAGE_KEY = 'archeon-engine-audio';
+const ENTRY_RAMP_SECONDS = 3;
+const ENTRY_GAIN_MULTIPLIER = 2;
 
 const SECTION_INTENSITY = {
-  prelude: 0.18,
-  hero: 0.48,
-  performance: 0.88,
-  engineering: 0.66,
-  finale: 0.3
+  prelude: 0.46,
+  hero: 0.58,
+  performance: 0.9,
+  engineering: 0.72,
+  finale: 0.5
 };
 
 function clamp(value, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
+}
+
+function smoothstep(value) {
+  const t = clamp(value);
+  return t * t * (3 - 2 * t);
 }
 
 function createNoiseBuffer(context) {
@@ -51,7 +58,9 @@ export class EngineAudioController {
     this.isExperienceReady = false;
     this.loadProgress = 0;
     this.sectionId = 'prelude';
+    this.nextSectionId = null;
     this.sectionBlend = 0;
+    this.entryRampStartTime = 0;
     this.resumeOnGesture = this.desiredEnabled;
     this.context = null;
     this.masterGain = null;
@@ -198,6 +207,7 @@ export class EngineAudioController {
 
     this.enabled = true;
     this.resumeOnGesture = false;
+    this.entryRampStartTime = this.context.currentTime;
     this.setUiState(true, 'Live');
     this.syncEngineState();
   }
@@ -247,9 +257,10 @@ export class EngineAudioController {
     this.syncEngineState();
   }
 
-  setDriveState(sectionId, blend = 0) {
+  setDriveState(sectionId, blend = 0, nextSectionId = null) {
     this.sectionId = sectionId || this.sectionId;
     this.sectionBlend = clamp(blend);
+    this.nextSectionId = nextSectionId || null;
     if (this.isExperienceReady) {
       this.syncEngineState();
     }
@@ -259,10 +270,16 @@ export class EngineAudioController {
     if (!this.context || !this.enabled) return;
 
     const now = this.context.currentTime;
-    const sectionBase = SECTION_INTENSITY[this.sectionId] ?? 0.36;
+    const sectionBase = SECTION_INTENSITY[this.sectionId] ?? 0.52;
+    const nextSectionBase = this.nextSectionId
+      ? SECTION_INTENSITY[this.nextSectionId] ?? sectionBase
+      : sectionBase;
     const intensity = this.isExperienceReady
-      ? clamp(sectionBase + this.sectionBlend * 0.18, 0.12, 1)
-      : clamp(0.08 + this.loadProgress * 0.92, 0.08, 1);
+      ? clamp(sectionBase + (nextSectionBase - sectionBase) * this.sectionBlend, 0.18, 1)
+      : clamp(0.16 + this.loadProgress * 0.84, 0.16, 1);
+    const entryRampProgress = smoothstep((now - this.entryRampStartTime) / ENTRY_RAMP_SECONDS);
+    const entryGain = 0.22 + entryRampProgress * (ENTRY_GAIN_MULTIPLIER - 0.22);
+    const toneGain = 0.7 + entryRampProgress * 0.45;
 
     const baseFrequency = 28 + intensity * 78;
     const harmonics = [1, 1.62, 0.54];
@@ -272,10 +289,10 @@ export class EngineAudioController {
     });
 
     this.masterGain.gain.cancelScheduledValues(now);
-    this.masterGain.gain.setTargetAtTime(0.025 + intensity * 0.04, now, 0.14);
-    this.engineGain.gain.setTargetAtTime(0.26 + intensity * 0.26, now, 0.16);
-    this.noiseGain.gain.setTargetAtTime(0.004 + intensity * 0.026, now, 0.18);
-    this.engineFilter.frequency.setTargetAtTime(420 + intensity * 1500, now, 0.18);
-    this.presenceFilter.frequency.setTargetAtTime(720 + intensity * 980, now, 0.18);
+    this.masterGain.gain.setTargetAtTime((0.024 + intensity * 0.042) * entryGain, now, 0.22);
+    this.engineGain.gain.setTargetAtTime((0.26 + intensity * 0.24) * toneGain, now, 0.24);
+    this.noiseGain.gain.setTargetAtTime((0.006 + intensity * 0.03) * (0.72 + entryRampProgress * 0.48), now, 0.26);
+    this.engineFilter.frequency.setTargetAtTime(440 + intensity * 1580, now, 0.22);
+    this.presenceFilter.frequency.setTargetAtTime(760 + intensity * 1040, now, 0.22);
   }
 }

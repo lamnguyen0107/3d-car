@@ -68,16 +68,16 @@ export class SceneController {
     this.contactShadowOffsetY = 0.003;
     this.currentFloorY = this.floorBaseY;
     this.desiredFloorY = this.floorBaseY;
-    this.positionDamping = this.profile.reducedMotion ? 28 : this.profile.lowPower ? 5.2 : 6.2;
-    this.rotationDamping = this.profile.reducedMotion ? 24 : this.profile.lowPower ? 4.4 : 5;
-    this.environmentDamping = this.profile.reducedMotion ? 24 : this.profile.lowPower ? 4.8 : 5.6;
+    this.positionDamping = this.profile.reducedMotion ? 28 : this.profile.lowPower ? 3.6 : 3.15;
+    this.rotationDamping = this.profile.reducedMotion ? 24 : this.profile.lowPower ? 3.3 : 2.8;
+    this.environmentDamping = this.profile.reducedMotion ? 24 : this.profile.lowPower ? 3.5 : 3;
 
     this.mixer = null;
     this.actions = new Map();
     this.animatedActions = new Set();
     this.playedCues = new Set();
     this.restTransforms = new Map();
-    this.cueSpeedMultiplier = 1.2;
+    this.cueSpeedMultiplier = 0.92;
     this.radius = 1;
     this.groundY = 0;
     this.modelScale = 1;
@@ -120,8 +120,8 @@ export class SceneController {
     this.scene.environment = envMap;
     pmremGenerator.dispose();
 
-    const ambient = new THREE.HemisphereLight(0xf2e6d4, 0x11100e, 1.72);
-    const key = new THREE.DirectionalLight(0xfff3df, 4.45);
+    const ambient = new THREE.HemisphereLight(0xf1dbc0, 0x2b0507, 1.96);
+    const key = new THREE.DirectionalLight(0xf3d4a7, 4.9);
     key.position.set(6, 5, 5);
     key.castShadow = this.profile.shadowsEnabled;
     key.shadow.mapSize.set(this.profile.shadowMapSize, this.profile.shadowMapSize);
@@ -130,10 +130,10 @@ export class SceneController {
     key.shadow.bias = -0.0002;
     this.keyLight = key;
 
-    const rim = new THREE.PointLight(0xc7a96d, 14, 48, 2.2);
+    const rim = new THREE.PointLight(0xff6a4f, 18.5, 48, 2.2);
     rim.position.set(-4, 2, -5);
 
-    const fill = new THREE.PointLight(0xf1dfbf, 11, 32, 2.2);
+    const fill = new THREE.PointLight(0xd7af73, 13.8, 32, 2.2);
     fill.position.set(4, 1.5, 4.5);
 
     const glowBaseTexture = this.createFloorGlowTexture();
@@ -241,10 +241,10 @@ export class SceneController {
       size / 2,
       size * 0.5
     );
-    gradient.addColorStop(0, 'rgba(185,160,106,0.36)');
-    gradient.addColorStop(0.18, 'rgba(185,160,106,0.12)');
-    gradient.addColorStop(0.52, 'rgba(185,160,106,0.025)');
-    gradient.addColorStop(1, 'rgba(185,160,106,0)');
+    gradient.addColorStop(0, 'rgba(255,111,94,0.58)');
+    gradient.addColorStop(0.18, 'rgba(255,111,94,0.2)');
+    gradient.addColorStop(0.52, 'rgba(255,111,94,0.05)');
+    gradient.addColorStop(1, 'rgba(255,111,94,0)');
     context.fillStyle = gradient;
     context.fillRect(0, 0, size, size);
 
@@ -267,9 +267,9 @@ export class SceneController {
       size / 2,
       size * 0.42
     );
-    gradient.addColorStop(0, 'rgba(185,160,106,0.3)');
-    gradient.addColorStop(0.16, 'rgba(137,111,68,0.16)');
-    gradient.addColorStop(0.34, 'rgba(49,39,24,0.08)');
+    gradient.addColorStop(0, 'rgba(255,118,104,0.58)');
+    gradient.addColorStop(0.16, 'rgba(232,64,48,0.3)');
+    gradient.addColorStop(0.34, 'rgba(116,16,18,0.12)');
     gradient.addColorStop(1, 'rgba(0,0,0,0)');
     context.fillStyle = gradient;
     context.fillRect(0, 0, size, size);
@@ -375,14 +375,14 @@ export class SceneController {
         }
 
         if (materialName === 'body' && material.color) {
-          material.color.set(0x8b1f1a);
-          material.metalness = Math.min(0.12, material.metalness ?? 0.08);
-          material.roughness = Math.max(0.22, material.roughness ?? 0.22);
-          material.envMapIntensity = 1.12;
+          material.color.set(0x8d241d);
+          material.metalness = Math.min(0.08, material.metalness ?? 0.08);
+          material.roughness = Math.max(0.36, material.roughness ?? 0.22);
+          material.envMapIntensity = 0.76;
         }
 
         if (materialName.includes('glass')) {
-          material.envMapIntensity = 1.7;
+          material.envMapIntensity = 1.52;
           material.opacity = Math.min(material.opacity ?? 0.5, 0.42);
           material.transparent = true;
         }

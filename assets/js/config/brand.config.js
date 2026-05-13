@@ -2,7 +2,7 @@ export const BRAND_CONFIG = {
   brandName: 'ARCHEON',
   modelName: 'NOCTIS R',
   heroLine: 'NOCTIS R',
-  heroSubline: 'Lightness in the line. Control in the details.',
+  heroSubline: 'Lightness in the line.\nControl in the details.',
   primaryCta: 'Request a Viewing',
   palette: {
     background: '#08090b',
