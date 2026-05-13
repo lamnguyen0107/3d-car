@@ -1,11 +1,11 @@
 import { BRAND_CONFIG } from '../config/brand.config.js';
 
 const LOADING_STATES = [
-  'Ignition sequence',
-  'Charging aero maps',
-  'Syncing telemetry',
-  'Vectoring wheelbase',
-  'Redline ready'
+  'Loading model',
+  'Preparing materials',
+  'Setting camera',
+  'Checking motion',
+  'Ready'
 ];
 const LOADING_EPSILON = 0.001;
 const LOADING_SMOOTHING = 10;

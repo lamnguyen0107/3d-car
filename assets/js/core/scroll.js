@@ -5,11 +5,11 @@ import { STORY_CONFIG } from '../config/story.config.js';
 gsap.registerPlugin(ScrollTrigger);
 
 const DRIVE_MODE_LABELS = {
-  prelude: 'Grid Lock',
-  hero: 'Ignition',
-  performance: 'Redline',
-  engineering: 'Apex Craft',
-  finale: 'Pit Exit'
+  prelude: 'Intro',
+  hero: 'Profile',
+  performance: 'Performance',
+  engineering: 'Engineering',
+  finale: 'Viewing'
 };
 
 function setActivePanel(sectionId) {

@@ -1,20 +1,20 @@
 export const BRAND_CONFIG = {
   brandName: 'ARCHEON',
   modelName: 'NOCTIS R',
-  heroLine: 'Velocity, carved from shadow.',
-  heroSubline: 'Low, silent, immediate.',
-  primaryCta: 'Book a Private Reveal',
+  heroLine: 'NOCTIS R',
+  heroSubline: 'Lightness in the line. Control in the details.',
+  primaryCta: 'Request a Viewing',
   palette: {
-    background: '#090304',
-    backgroundElevated: 'rgba(21, 8, 10, 0.68)',
-    surface: 'rgba(24, 9, 12, 0.74)',
-    surfaceBorder: 'rgba(255, 118, 104, 0.16)',
-    text: '#fff2ef',
-    muted: 'rgba(255, 220, 214, 0.72)',
-    accent: '#ff6f5e',
-    accentSoft: 'rgba(255, 111, 94, 0.18)',
-    accentStrong: '#ffd1c9',
-    shadowGlow: '0 0 50px rgba(255, 111, 94, 0.16)'
+    background: '#08090b',
+    backgroundElevated: 'rgba(16, 17, 20, 0.78)',
+    surface: 'rgba(18, 19, 22, 0.72)',
+    surfaceBorder: 'rgba(255, 255, 255, 0.12)',
+    text: '#f5f2ed',
+    muted: 'rgba(229, 222, 212, 0.7)',
+    accent: '#b9a06a',
+    accentSoft: 'rgba(185, 160, 106, 0.16)',
+    accentStrong: '#efe4cf',
+    shadowGlow: '0 18px 50px rgba(0, 0, 0, 0.35)'
   },
   model: {
     baseRotationY: -Math.PI * 0.08,

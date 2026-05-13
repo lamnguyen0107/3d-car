@@ -120,8 +120,8 @@ export class SceneController {
     this.scene.environment = envMap;
     pmremGenerator.dispose();
 
-    const ambient = new THREE.HemisphereLight(0xffe4dd, 0x150708, 1.8);
-    const key = new THREE.DirectionalLight(0xfff0eb, 4.8);
+    const ambient = new THREE.HemisphereLight(0xf2e6d4, 0x11100e, 1.72);
+    const key = new THREE.DirectionalLight(0xfff3df, 4.45);
     key.position.set(6, 5, 5);
     key.castShadow = this.profile.shadowsEnabled;
     key.shadow.mapSize.set(this.profile.shadowMapSize, this.profile.shadowMapSize);
@@ -130,10 +130,10 @@ export class SceneController {
     key.shadow.bias = -0.0002;
     this.keyLight = key;
 
-    const rim = new THREE.PointLight(0xff6f5e, 18, 48, 2.2);
+    const rim = new THREE.PointLight(0xc7a96d, 14, 48, 2.2);
     rim.position.set(-4, 2, -5);
 
-    const fill = new THREE.PointLight(0xffb4a8, 14, 32, 2.2);
+    const fill = new THREE.PointLight(0xf1dfbf, 11, 32, 2.2);
     fill.position.set(4, 1.5, 4.5);
 
     const glowBaseTexture = this.createFloorGlowTexture();
@@ -241,10 +241,10 @@ export class SceneController {
       size / 2,
       size * 0.5
     );
-    gradient.addColorStop(0, 'rgba(255,111,94,0.52)');
-    gradient.addColorStop(0.18, 'rgba(255,111,94,0.16)');
-    gradient.addColorStop(0.52, 'rgba(255,111,94,0.03)');
-    gradient.addColorStop(1, 'rgba(255,111,94,0)');
+    gradient.addColorStop(0, 'rgba(185,160,106,0.36)');
+    gradient.addColorStop(0.18, 'rgba(185,160,106,0.12)');
+    gradient.addColorStop(0.52, 'rgba(185,160,106,0.025)');
+    gradient.addColorStop(1, 'rgba(185,160,106,0)');
     context.fillStyle = gradient;
     context.fillRect(0, 0, size, size);
 
@@ -267,9 +267,9 @@ export class SceneController {
       size / 2,
       size * 0.42
     );
-    gradient.addColorStop(0, 'rgba(255,118,104,0.5)');
-    gradient.addColorStop(0.16, 'rgba(232,64,48,0.24)');
-    gradient.addColorStop(0.34, 'rgba(116,16,18,0.08)');
+    gradient.addColorStop(0, 'rgba(185,160,106,0.3)');
+    gradient.addColorStop(0.16, 'rgba(137,111,68,0.16)');
+    gradient.addColorStop(0.34, 'rgba(49,39,24,0.08)');
     gradient.addColorStop(1, 'rgba(0,0,0,0)');
     context.fillStyle = gradient;
     context.fillRect(0, 0, size, size);
@@ -357,15 +357,36 @@ export class SceneController {
       child.receiveShadow = true;
       child.frustumCulled = true;
 
-      if (child.material) {
-        child.material.envMapIntensity = child.material.envMapIntensity || 1.5;
-        if ('metalness' in child.material) {
-          child.material.metalness = Math.min(1, child.material.metalness + 0.05);
+      const materials = Array.isArray(child.material)
+        ? child.material.filter(Boolean)
+        : child.material
+          ? [child.material]
+          : [];
+
+      materials.forEach((material) => {
+        const materialName = (material.name || '').toLowerCase();
+
+        material.envMapIntensity = material.envMapIntensity || 1.5;
+        if ('metalness' in material) {
+          material.metalness = Math.min(1, material.metalness + 0.05);
         }
-        if ('roughness' in child.material) {
-          child.material.roughness = Math.max(0.05, child.material.roughness * 0.82);
+        if ('roughness' in material) {
+          material.roughness = Math.max(0.05, material.roughness * 0.82);
         }
-      }
+
+        if (materialName === 'body' && material.color) {
+          material.color.set(0x8b1f1a);
+          material.metalness = Math.min(0.12, material.metalness ?? 0.08);
+          material.roughness = Math.max(0.22, material.roughness ?? 0.22);
+          material.envMapIntensity = 1.12;
+        }
+
+        if (materialName.includes('glass')) {
+          material.envMapIntensity = 1.7;
+          material.opacity = Math.min(material.opacity ?? 0.5, 0.42);
+          material.transparent = true;
+        }
+      });
 
       meshEntries.push({
         mesh: child,
@@ -519,6 +540,7 @@ export class SceneController {
     this.viewportWidth = width;
     this.viewportHeight = height;
     this.camera.aspect = width / height;
+    this.camera.zoom = width < 720 ? 0.68 : width < 1080 ? 0.86 : 1;
     this.camera.updateProjectionMatrix();
     const pixelRatio = Math.min(window.devicePixelRatio || 1, this.profile.pixelRatioCap);
     this.renderer.setPixelRatio(pixelRatio);

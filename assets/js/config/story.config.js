@@ -2,14 +2,14 @@ export const STORY_CONFIG = {
   sections: [
     {
       id: 'prelude',
-      camera: { x: 0.02, y: 0.22, z: 1.68 },
-      target: { x: 0.24, y: 0.16, z: 0 },
-      rotationY: 0.25,
-      stageX: 0.62,
+      camera: { x: -0.08, y: 0.23, z: 2.1 },
+      target: { x: 0.04, y: 0.16, z: 0 },
+      rotationY: -0.8,
+      stageX: 0.16,
       liftY: 0.08,
       floorOffsetY: 0,
-      exposure: 1.22,
-      cues: ['FrontDoorWindshieldAction']
+      exposure: 1.16,
+      cues: []
     },
     {
       id: 'hero',
