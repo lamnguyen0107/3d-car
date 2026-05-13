@@ -1,6 +1,6 @@
 ---
 name: threejs-car-animation-transfer
-description: Transfer the 3d-car Three.js vehicle scene into another web project. Use whenever moving this GLB car animation system into Vite, vanilla JS, React, or Next apps, especially when wheel rotation, GLTF clip cues, scroll-driven camera poses, runtime cleanup, or GLB assets larger than 5MB need an opt-in optimization pass that preserves detail, textures, and animation behavior as much as possible.
+description: Transfer the 3d-car Three.js vehicle scene into another web project. Use whenever moving this GLB car animation system into Vite, vanilla JS, React, or Next apps, especially when wheel rotation, GLTF clip cues, viewport-fit model scaling, smooth scroll-driven camera poses, runtime cleanup, or GLB assets larger than 5MB need an opt-in optimization pass that preserves detail, textures, and animation behavior as much as possible.
 ---
 
 # Three.js Car Animation Transfer
@@ -23,6 +23,7 @@ This skill handles:
 - Wheel-root matching.
 - GLTF clip matching.
 - Model normalization.
+- Viewport-fit camera and model scaling.
 - Scroll-driven camera poses.
 - Runtime cleanup for SPA and React apps.
 
@@ -40,8 +41,9 @@ Follow this order:
 2. If the GLB is larger than `5MB`, recommend optimization and ask the user first.
 3. Inspect clips, node names, wheel roots, and likely wheel axis.
 4. Put the final chosen GLB in a bundler-managed asset path.
-5. Port config, performance profile, scene, scroll logic, and bootstrap.
-6. Validate wheel spin, cue playback, scroll blending, and cleanup.
+5. Fit the model to the viewport before tuning individual section poses.
+6. Port config, performance profile, scene, scroll logic, and bootstrap.
+7. Validate viewport fit, wheel spin, cue playback, scroll blending, and cleanup.
 
 ## Asset Gate
 
@@ -209,11 +211,29 @@ Keep these rules:
 
 - Resolve the model with `new URL(..., import.meta.url).href`.
 - Normalize before tuning poses.
+- Treat the viewport as the camera contract: set `camera.aspect = viewportWidth / viewportHeight`, update the projection matrix, and fit the model into the camera frustum after each resize.
+- Scale large models down and small models up so the vehicle stays inside the visible viewport before any section-specific `stageX`, `camera`, or `target` tuning.
+- Keep model fit bounded with scale multipliers so resize events do not make the car microscopic or oversized.
 - Save rest transforms before cues.
 - Rotate wheels on top of the rest pose.
 - Re-apply wheel spin after rest-pose restore and after mixer updates if clips overwrite wheel transforms.
 - Cap pixel ratio on low-power devices.
 - Return a cleanup handle for unmount.
+
+## Viewport Fit Rule
+
+The car must enter the screen already fitting inside the viewport. Do not rely on manual camera guessing to rescue a bad initial scale.
+
+Use this rule:
+
+1. Set camera aspect from the real viewport.
+2. Compute the visible frustum span at the first section's camera distance.
+3. Compute a target diameter from the smaller viewport span and a coverage ratio.
+4. Scale the GLB root so its bounding box fits that diameter.
+5. Allow both directions: large models scale down, small models scale up.
+6. Re-run the fit on resize before refreshing scroll triggers.
+
+Keep section poses as art direction after this fit. `stageX` may create layout negative space, but it must not push the car outside the viewport unless the design intentionally crops it.
 
 ## Full Portable Example
 
@@ -226,6 +246,13 @@ export const VEHICLE_CONFIG = {
   wheelSpinAxis: [1, 0, 0],
   wheelSpinSpeed: Math.PI * 8,
   desiredLength: 4.8,
+  viewportFit: {
+    enabled: true,
+    coverage: 0.78,
+    mobileCoverage: 0.68,
+    minScaleMultiplier: 0.7,
+    maxScaleMultiplier: 1.8
+  },
   baseRotationY: -Math.PI * 0.08,
   liftY: 0.18,
   hoverAmplitude: 0.007,
@@ -381,11 +408,14 @@ export class VehicleSceneController {
 
     this.modelGroup = new THREE.Group();
     this.carRoot = new THREE.Group();
+    this.modelScaleWrap = null;
+    this.modelBaseBox = new THREE.Box3();
     this.scene.add(this.modelGroup);
     this.modelGroup.add(this.carRoot);
 
     this.radius = 1;
     this.modelScale = 1;
+    this.modelBaseScale = 1;
     this.floorBaseY = -0.02;
     this.currentFloorY = this.floorBaseY;
     this.desiredFloorY = this.floorBaseY;
@@ -527,7 +557,8 @@ export class VehicleSceneController {
     const alignedCenter = alignedBox.getCenter(new THREE.Vector3());
     const alignedLength = Math.max(alignedSize.x, alignedSize.z);
 
-    this.modelScale = VEHICLE_CONFIG.desiredLength / alignedLength;
+    this.modelBaseScale = VEHICLE_CONFIG.desiredLength / alignedLength;
+    this.modelScale = this.modelBaseScale;
     this.radius = VEHICLE_CONFIG.desiredLength * 0.5;
 
     const modelScaleWrap = new THREE.Group();
@@ -535,6 +566,8 @@ export class VehicleSceneController {
     modelScaleWrap.scale.setScalar(this.modelScale);
     modelScaleWrap.add(model);
     this.carRoot.add(modelScaleWrap);
+    this.modelScaleWrap = modelScaleWrap;
+    this.modelBaseBox.copy(alignedBox);
     modelScaleWrap.updateMatrixWorld(true);
 
     const scaledBox = new THREE.Box3().setFromObject(modelScaleWrap);
@@ -636,6 +669,33 @@ export class VehicleSceneController {
     const pixelRatio = Math.min(window.devicePixelRatio || 1, this.profile.pixelRatioCap);
     this.renderer.setPixelRatio(pixelRatio);
     this.renderer.setSize(width, height, false);
+
+    this.fitModelToViewport(width, height);
+  }
+
+  fitModelToViewport(width = window.innerWidth, height = window.innerHeight) {
+    const fit = VEHICLE_CONFIG.viewportFit;
+    if (!fit?.enabled || !this.modelScaleWrap || this.modelBaseBox.isEmpty()) return;
+
+    const firstPose = this.getSectionPose(VEHICLE_CONFIG.sections[0]);
+    const cameraPosition = new THREE.Vector3(firstPose.cameraX, firstPose.cameraY, firstPose.cameraZ);
+    const cameraTarget = new THREE.Vector3(firstPose.targetX, firstPose.targetY, firstPose.targetZ);
+    const distance = cameraPosition.distanceTo(cameraTarget);
+    const verticalSpan = 2 * Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2) * distance;
+    const horizontalSpan = verticalSpan * this.camera.aspect;
+    const coverage = width <= 720 ? fit.mobileCoverage : fit.coverage;
+    const targetDiameter = Math.min(verticalSpan, horizontalSpan) * coverage;
+    const sourceSize = this.modelBaseBox.getSize(new THREE.Vector3());
+    const sourceDiameter = Math.max(sourceSize.x, sourceSize.y, sourceSize.z);
+    const fittedScale = THREE.MathUtils.clamp(
+      targetDiameter / sourceDiameter,
+      this.modelBaseScale * fit.minScaleMultiplier,
+      this.modelBaseScale * fit.maxScaleMultiplier
+    );
+
+    this.modelScale = fittedScale;
+    this.modelScaleWrap.scale.setScalar(fittedScale);
+    this.radius = (sourceDiameter * fittedScale) * 0.5;
   }
 
   playCue(name) {
@@ -918,19 +978,22 @@ If the page uses the App Router and the scene is heavy, prefer loading this comp
 Tune in this order:
 
 1. `desiredLength`
-2. wheel root regex
-3. wheel spin axis
-4. clip names
-5. section camera values
-6. section target values
-7. rotation and stage offsets
-8. exposure
-9. damping
-10. optional drift and postprocessing
+2. `viewportFit`
+3. wheel root regex
+4. wheel spin axis
+5. clip names
+6. section camera values
+7. section target values
+8. rotation and stage offsets
+9. exposure
+10. damping
+11. optional drift and postprocessing
 
 ### Normalization
 
 Use `desiredLength` when the car is globally too large or too small. Do not use it to fix a single bad shot.
+
+Use `viewportFit` after normalization. The viewport fit is the hard safety rail: the model should stay fully visible in the camera frustum. If the car is tiny, increase through `maxScaleMultiplier` or coverage. If the car clips, reduce coverage or lower `maxScaleMultiplier` before moving section cameras.
 
 ### Section pose knobs
 
@@ -955,6 +1018,8 @@ const t = THREE.MathUtils.smootherstep(progress, 0, 1);
 ```
 
 This keeps transitions soft instead of robotic. If motion is too floaty, increase damping or reduce pose distance. If too stiff, lower damping slightly.
+
+Do not jump directly between section poses during normal scroll. Every section transition should pass through `mixPoses(...)`, then `setDesiredPose(...)`, and the render loop should settle with `THREE.MathUtils.damp(...)`. This keeps the car, camera, target, lift, floor, and exposure moving as one smooth system.
 
 ### Damping
 
@@ -1102,10 +1167,13 @@ After transfer, verify all of the following:
 9. Texture detail is still acceptable in intended hero views.
 10. `npm run build` passes.
 11. The canvas is nonblank.
-12. The car is centered.
-13. All wheels rotate.
-14. Scroll sections change pose and cues smoothly.
-15. Route teardown leaves no live RAF loop.
-16. Route teardown leaves no orphaned `ScrollTrigger`s.
+12. The camera aspect matches the viewport after load and after resize.
+13. The full car fits inside the viewport on desktop and mobile.
+14. Small models scale up and large models scale down within configured viewport-fit bounds.
+15. The car is centered before section-specific art direction offsets.
+16. All wheels rotate.
+17. Scroll sections change pose and cues smoothly.
+18. Route teardown leaves no live RAF loop.
+19. Route teardown leaves no orphaned `ScrollTrigger`s.
 
 If any step fails, do not call the transfer complete.
