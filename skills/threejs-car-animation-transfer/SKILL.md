@@ -1,83 +1,51 @@
 ---
 name: threejs-car-animation-transfer
-description: Transfer the 3d-car Three.js vehicle scene into another web project. Use whenever moving this GLB car animation system into Vite, vanilla JS, React, or Next apps, especially when wheel rotation, GLTF clip cues, scroll-driven camera poses, runtime cleanup, or large GLB assets larger than 5MB need optimization before integration. This is a single-file skill with workflow, code samples, tuning notes, and optimization guidance kept inline.
+description: Transfer the 3d-car Three.js vehicle scene into another web project. Use whenever moving this GLB car animation system into Vite, vanilla JS, React, or Next apps, especially when wheel rotation, GLTF clip cues, scroll-driven camera poses, runtime cleanup, or GLB assets larger than 5MB need an opt-in optimization pass that preserves detail, textures, and animation behavior as much as possible.
 ---
 
 # Three.js Car Animation Transfer
 
-This skill is a single-file, all-in-one transfer guide for moving the `3d-car` animation system into another project.
+This skill is a single-file transfer guide for moving the `3d-car` animation system into another project.
 
-Use it when you need one place that contains:
+Keep this goal in mind:
 
-- The transfer workflow.
-- The asset gate for large GLBs.
-- The optimization policy for files larger than `5MB`.
-- The full code sample.
-- The animation tuning explanation.
-- The cleanup pattern for SPA and React apps.
-
-Open this file and work top to bottom. Do not hunt for extra reference markdown files. Everything important is inline here.
+- Reuse the scene architecture.
+- Keep the imported model visually intact.
+- Preserve animation behavior.
+- Do not optimize large assets without explicit user approval.
 
 ## Scope
 
 This skill handles:
 
-- Porting the `3d-car` scene pattern into another frontend codebase.
-- Preflight checks on a new GLB asset.
-- Mandatory optimization when a GLB exceeds `5MB`.
-- Wheel-root matching, clip matching, and stage normalization.
-- Scroll-driven camera poses and cue playback.
-- Runtime cleanup so the scene can be mounted and unmounted safely.
-
-This skill does not handle:
-
-- Blender re-rigging.
-- Creating new GLTF animations from scratch.
-- Re-authoring materials for a new art direction.
-- Deep 3D modeling cleanup that requires DCC tools.
+- GLB preflight checks.
+- Opt-in optimization for models larger than `5MB`.
+- Wheel-root matching.
+- GLTF clip matching.
+- Model normalization.
+- Scroll-driven camera poses.
+- Runtime cleanup for SPA and React apps.
 
 ## Source Of Truth
 
-Start from the current implementation in this repo:
+Use the current repo implementation as the reference: `assets/js/core/scene.js`, `assets/js/core/scroll.js`, `assets/js/core/performance.js`, `assets/js/main.js`, `assets/js/config/brand.config.js`, `assets/js/config/story.config.js`.
 
-- `assets/js/core/scene.js`
-- `assets/js/core/scroll.js`
-- `assets/js/core/performance.js`
-- `assets/js/main.js`
-- `assets/js/config/brand.config.js`
-- `assets/js/config/story.config.js`
-
-Do not copy blindly into the new project. Audit the incoming GLB first, then adapt the runtime.
-
-## Core Pattern
-
-The scene architecture is:
-
-1. Load a GLB vehicle with `GLTFLoader`.
-2. Enable Meshopt decoding if the asset uses Meshopt compression.
-3. Normalize the model to a predictable stage size.
-4. Save every object's rest transform.
-5. Spin wheel root nodes every frame with a quaternion layered over the rest pose.
-6. Play named GLTF clips as cues.
-7. Interpolate camera, target, body rotation, stage offset, lift, floor offset, and exposure by scroll section.
-8. Use a bounded performance profile so lower-power devices degrade gracefully.
-9. Return a cleanup handle so SPA or React unmounts do not leak RAF loops or `ScrollTrigger`s.
+Copy the pattern, not the file blindly.
 
 ## Transfer Flow
 
-Follow this order. Do not skip ahead.
+Follow this order:
 
-1. Inspect the incoming GLB size.
-2. If the file is larger than `5MB`, optimize it before transfer.
-3. Inspect clip names, node names, and likely wheel roots.
-4. Move the final GLB to a bundler-managed asset path.
-5. Port the config, performance profile, scene controller, scroll narrative, and bootstrap.
-6. Validate wheel spin, cue playback, and scroll blending.
-7. Validate cleanup on route change or unmount.
+1. Measure the incoming GLB size.
+2. If the GLB is larger than `5MB`, recommend optimization and ask the user first.
+3. Inspect clips, node names, wheel roots, and likely wheel axis.
+4. Put the final chosen GLB in a bundler-managed asset path.
+5. Port config, performance profile, scene, scroll logic, and bootstrap.
+6. Validate wheel spin, cue playback, scroll blending, and cleanup.
 
-## Required Asset Gate
+## Asset Gate
 
-Before integration, check the GLB size:
+Before transfer, measure the GLB:
 
 ```bash
 node skills/threejs-car-animation-transfer/scripts/check-glb-size.mjs src/assets/models/car.glb
@@ -85,13 +53,38 @@ node skills/threejs-car-animation-transfer/scripts/check-glb-size.mjs src/assets
 
 Interpretation:
 
-- `<= 5MB`: transfer may proceed without offline optimization if runtime FPS is stable.
-- `> 5MB`: optimization is mandatory before integration.
-- `> 8MB`: optimize and expect to reduce textures, geometry, or both.
+- `<= 5MB`: transfer may proceed without offline optimization if runtime performance is acceptable.
+- `> 5MB`: optimization should be recommended, but must be approved by the user first.
+- `> 8MB`: optimization is strongly recommended, but still opt-in.
 
-This gate exists because download size is only part of the problem. Large GLBs often imply high texture memory, excessive geometry, or decode overhead that hurts animation smoothness.
+Large size is only a signal. Real cost is size plus texture memory, geometry density, draw calls, and decode overhead.
 
-## Optimization Policy For Large GLBs
+## User Approval Rule
+
+Never optimize automatically.
+
+When the model is larger than `5MB`, ask before changing the asset:
+
+- `Do you want me to run a safe optimization pass first? It keeps the original file, avoids texture downscaling, and focuses on preserving animation compatibility.`
+- `The safe pass was not enough. Do you want me to try a more aggressive pass that may reduce texture fidelity, such as WebP conversion or texture resize?`
+
+## Preservation Rule
+
+The target is not "smallest possible file". The target is "smaller file without breaking the look or animation behavior that matters."
+
+Always preserve:
+
+- the original source GLB
+- clip count
+- clip names
+- visible body curvature
+- wheel silhouette
+- acceptable texture detail in hero views
+- animation playback behavior
+
+Be honest: you cannot guarantee zero visual change from every transform. That is why optimization is opt-in and must pass visual QA plus animation QA before it replaces the runtime asset.
+
+## Optimization Policy
 
 Use official `gltf-transform` tooling for offline optimization.
 
@@ -101,84 +94,102 @@ Install:
 npm install -D @gltf-transform/cli
 ```
 
-Inspect the model first:
+Inspect the source file first:
 
 ```bash
 npx gltf-transform inspect src/assets/models/car.glb
 ```
 
-The preferred path in this skill is:
+### Safe pass
 
-1. Use Meshopt for geometry compression.
-2. Use WebP conversion for textures.
-3. If the output is still too heavy, resize textures and inspect again.
-4. Keep the original file until visual QA passes.
+Use the safe pass first after user approval. Goals:
 
-Baseline pipeline:
+- keep the original file untouched
+- avoid texture downscaling
+- avoid geometry simplification by default
+- keep runtime loader strategy aligned with Meshopt
+
+Command:
 
 ```bash
-npx gltf-transform meshopt src/assets/models/car.glb src/assets/models/car.meshopt.glb --level medium
-npx gltf-transform webp src/assets/models/car.meshopt.glb src/assets/models/car.optimized.glb
+npx gltf-transform meshopt src/assets/models/car.glb src/assets/models/car.safe.glb --level medium
 ```
 
-If still too large:
+Inspect the result:
+
+```bash
+npx gltf-transform inspect src/assets/models/car.safe.glb
+```
+
+### Aggressive pass
+
+Only use this after a second explicit approval if the safe pass is still too heavy.
+
+WebP conversion:
+
+```bash
+npx gltf-transform webp src/assets/models/car.safe.glb src/assets/models/car.optimized.glb
+```
+
+Inspect:
+
+```bash
+npx gltf-transform inspect src/assets/models/car.optimized.glb
+```
+
+If the user explicitly approves texture downscaling:
 
 ```bash
 npx gltf-transform resize src/assets/models/car.optimized.glb src/assets/models/car.optimized-2k.glb --width 2048 --height 2048
 npx gltf-transform inspect src/assets/models/car.optimized-2k.glb
 ```
 
-Recommended output naming while iterating:
+Recommended naming while iterating:
 
 ```txt
 car.glb
-car.meshopt.glb
+car.safe.glb
 car.optimized.glb
 car.optimized-2k.glb
 ```
 
-When QA passes, pick one final runtime asset and point the app to it.
+Do not overwrite the original asset during experimentation.
 
 ## Runtime Loader Matching
 
-If the optimized asset uses Meshopt:
-
-```js
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-loader.setMeshoptDecoder(MeshoptDecoder);
-```
-
-If the optimized asset uses Draco instead:
-
-```js
-import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-
-const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath('/draco/');
-loader.setDRACOLoader(dracoLoader);
-```
+- Meshopt output -> `loader.setMeshoptDecoder(MeshoptDecoder)`
+- Draco output -> `loader.setDRACOLoader(dracoLoader)`
 
 Do not mismatch the offline compression strategy and the runtime loader.
 
-This means:
+### Draco runtime example
 
-- Meshopt-compressed asset -> use `setMeshoptDecoder(...)`
-- Draco-compressed asset -> use `setDRACOLoader(...)`
+Use this only when the asset was actually compressed with Draco:
 
-## Discovery Pass Before Porting
+```js
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+const loader = new GLTFLoader();
+const dracoLoader = new DRACOLoader();
+
+// Point this to a public decoder path in the target app.
+dracoLoader.setDecoderPath('/draco/');
+loader.setDRACOLoader(dracoLoader);
+
+const gltf = await loader.loadAsync(modelUrl);
+
+// Optional cleanup if the loader is no longer needed.
+dracoLoader.dispose();
+```
+
+## Discovery Pass
 
 Do not assume a new car model matches the original.
 
-Capture these facts before tuning:
+Capture final file size, clip names, clip durations, likely wheel parents, likely wheel axis, and largest texture dimensions from `inspect`.
 
-- Final optimized file size.
-- Animation clip names.
-- Wheel-root node names.
-- Model forward axis.
-- Wheel spin axis.
-- Largest texture dimensions from `gltf-transform inspect`.
-
-At runtime, add a one-time audit after `loadAsync(...)`:
+Add a one-time audit after `loadAsync(...)`:
 
 ```js
 console.table(gltf.animations.map((clip) => ({ name: clip.name, duration: clip.duration })));
@@ -190,79 +201,42 @@ gltf.scene.traverse((node) => {
 console.log('wheel candidates', wheelCandidates);
 ```
 
-If clip names or wheel candidates look wrong, block the transfer and fix config before styling the scene further.
-
-## Project Structure
-
-Recommended target structure:
-
-```txt
-src/
-  assets/
-    models/
-      car.optimized.glb
-  vehicle3d/
-    vehicle3d.config.js
-    performance-profile.js
-    vehicle-scene.js
-    scroll-narrative.js
-    bootstrap-vehicle3d.js
-```
+If these do not line up with config, block the transfer and fix config first.
 
 ## Runtime Rules
 
-Keep these rules from the current repo:
+Keep these rules:
 
 - Resolve the model with `new URL(..., import.meta.url).href`.
-- Normalize the model before tuning camera poses.
-- Store rest transforms before mixing wheel spin and clip playback.
-- Apply wheel spin as a quaternion layered over the wheel root rest pose.
-- Re-apply wheel spin after restoring rest pose and after `mixer.update(delta)` if clip playback overwrites wheel transforms.
-- Clamp pixel ratio on low-power devices.
+- Normalize before tuning poses.
+- Save rest transforms before cues.
+- Rotate wheels on top of the rest pose.
+- Re-apply wheel spin after rest-pose restore and after mixer updates if clips overwrite wheel transforms.
+- Cap pixel ratio on low-power devices.
 - Return a cleanup handle for unmount.
 
-## Full Code Sample
-
-The code below is intentionally verbose and commented for transfer work. It is not the shortest possible implementation. It is the easiest to reason about and tune.
+## Full Portable Example
 
 ### `vehicle3d.config.js`
 
 ```js
 export const VEHICLE_CONFIG = {
   modelUrl: new URL('../assets/models/car.optimized.glb', import.meta.url).href,
-
-  // Match the wheel parent objects, not only the tire mesh, so the whole assembly rotates.
   wheelRootPattern: /^rim_235(?:\.?\d{3})?$/,
-
-  // For some models this will be [0, 1, 0] or [0, 0, 1].
   wheelSpinAxis: [1, 0, 0],
-
-  // "Always spinning" baseline that still reads as premium motion.
   wheelSpinSpeed: Math.PI * 8,
-
-  // Normalize every imported vehicle to this approximate world length.
   desiredLength: 4.8,
-
-  // Base body orientation before section-specific offsets.
   baseRotationY: -Math.PI * 0.08,
-
-  // Default lift of the car on the stage.
   liftY: 0.18,
-
-  // Optional idle drift. Keep small or disable.
   hoverAmplitude: 0.007,
   hoverSpeed: 0.5,
-
-  // GLTF clip playback multiplier.
   cueSpeedMultiplier: 1.2,
-
   palette: {
     background: '#090304',
     key: 0xfff0eb,
     rim: 0xff6f5e,
     fill: 0xffb4a8
   },
-
   sections: [
     {
       id: 'prelude',
@@ -367,12 +341,6 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 import { VEHICLE_CONFIG } from './vehicle3d.config.js';
 
 const wheelSpinAxis = new THREE.Vector3(...VEHICLE_CONFIG.wheelSpinAxis);
@@ -398,7 +366,7 @@ export class VehicleSceneController {
 
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: !profile.lowPower && !profile.usePostprocessing,
+      antialias: !profile.lowPower,
       alpha: true,
       powerPreference: 'high-performance'
     });
@@ -427,7 +395,6 @@ export class VehicleSceneController {
     this.desiredRotationY = this.baseRotationY;
     this.desiredStageX = 0;
 
-    // Higher values snap faster. Lower values feel heavier and more cinematic.
     this.positionDamping = profile.reducedMotion ? 28 : profile.lowPower ? 5.2 : 6.2;
     this.rotationDamping = profile.reducedMotion ? 24 : profile.lowPower ? 4.4 : 5;
     this.environmentDamping = profile.reducedMotion ? 24 : profile.lowPower ? 4.8 : 5.6;
@@ -443,11 +410,7 @@ export class VehicleSceneController {
     this.wheelSpinQuaternion = new THREE.Quaternion();
     this.wheelSpinSpeed = VEHICLE_CONFIG.wheelSpinSpeed;
 
-    this.composer = null;
-    this.fxaaPass = null;
-
     this.setupLighting();
-    if (profile.usePostprocessing) this.setupPostprocessing();
     this.bindVisibility();
   }
 
@@ -490,23 +453,6 @@ export class VehicleSceneController {
     this.scene.add(ambient, key, rim, fill, this.floor);
   }
 
-  setupPostprocessing() {
-    this.composer = new EffectComposer(this.renderer);
-    this.composer.addPass(new RenderPass(this.scene, this.camera));
-
-    const bloom = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      this.profile.useExtraBloom ? 0.48 : 0.24,
-      0.7,
-      0.85
-    );
-    this.composer.addPass(bloom);
-
-    this.fxaaPass = new ShaderPass(FXAAShader);
-    this.composer.addPass(this.fxaaPass);
-    this.composer.addPass(new OutputPass());
-  }
-
   setupWheelSpin(model) {
     this.wheelSpinTargets = [];
     model.traverse((child) => {
@@ -518,7 +464,6 @@ export class VehicleSceneController {
 
   updateWheelSpin(delta) {
     if (!this.wheelSpinTargets.length || !this.wheelSpinSpeed) return;
-
     const spinStep = this.wheelSpinSpeed * Math.min(delta, 1 / 45);
     this.wheelSpinAngle = (this.wheelSpinAngle + spinStep) % (Math.PI * 2);
     this.applyWheelSpinPose();
@@ -526,7 +471,6 @@ export class VehicleSceneController {
 
   applyWheelSpinPose() {
     if (!this.wheelSpinTargets.length) return;
-
     this.wheelSpinQuaternion.setFromAxisAngle(wheelSpinAxis, this.wheelSpinAngle);
 
     this.wheelSpinTargets.forEach((wheelRoot) => {
@@ -578,7 +522,6 @@ export class VehicleSceneController {
       entry.box.getCenter(entry.center);
     });
 
-    // Normalize the vehicle so camera poses remain reusable across different car assets.
     const alignedBox = new THREE.Box3().setFromObject(model);
     const alignedSize = alignedBox.getSize(new THREE.Vector3());
     const alignedCenter = alignedBox.getCenter(new THREE.Vector3());
@@ -609,7 +552,6 @@ export class VehicleSceneController {
     });
 
     this.setupWheelSpin(model);
-
     model.traverse((child) => {
       this.restTransforms.set(child, {
         position: child.position.clone(),
@@ -642,7 +584,6 @@ export class VehicleSceneController {
   mixPoses(fromPose, toPose, progress) {
     const t = THREE.MathUtils.smootherstep(progress, 0, 1);
     const lerp = THREE.MathUtils.lerp;
-
     return {
       cameraX: lerp(fromPose.cameraX, toPose.cameraX, t),
       cameraY: lerp(fromPose.cameraY, toPose.cameraY, t),
@@ -695,28 +636,16 @@ export class VehicleSceneController {
     const pixelRatio = Math.min(window.devicePixelRatio || 1, this.profile.pixelRatioCap);
     this.renderer.setPixelRatio(pixelRatio);
     this.renderer.setSize(width, height, false);
-
-    if (this.composer) {
-      this.composer.setSize(width, height);
-      if (this.fxaaPass) {
-        this.fxaaPass.material.uniforms.resolution.value.set(
-          1 / (width * pixelRatio),
-          1 / (height * pixelRatio)
-        );
-      }
-    }
   }
 
   playCue(name) {
     if (!name || !this.actions.has(name) || this.playedCues.has(name)) return;
-
     const action = this.actions.get(name);
     action.reset();
     action.setLoop(THREE.LoopRepeat, Infinity);
     action.clampWhenFinished = false;
     action.timeScale = VEHICLE_CONFIG.cueSpeedMultiplier;
     action.play();
-
     this.playedCues.add(name);
     this.animatedActions.add(action);
   }
@@ -727,14 +656,12 @@ export class VehicleSceneController {
       object.quaternion.copy(transform.quaternion);
       object.scale.copy(transform.scale);
     });
-
     this.applyWheelSpinPose();
     this.carRoot.updateMatrixWorld(true);
   }
 
   playCueSet(cues = []) {
     if (!this.restTransforms.size) return;
-
     if (this.mixer) this.mixer.stopAllAction();
     this.animatedActions.clear();
     this.playedCues.clear();
@@ -767,7 +694,6 @@ export class VehicleSceneController {
     this.cameraTarget.x = THREE.MathUtils.damp(this.cameraTarget.x, this.desiredCameraTarget.x, this.positionDamping, delta);
     this.cameraTarget.y = THREE.MathUtils.damp(this.cameraTarget.y, this.desiredCameraTarget.y, this.positionDamping, delta);
     this.cameraTarget.z = THREE.MathUtils.damp(this.cameraTarget.z, this.desiredCameraTarget.z, this.positionDamping, delta);
-
     this.carRoot.rotation.y = THREE.MathUtils.damp(this.carRoot.rotation.y, this.desiredRotationY, this.rotationDamping, delta);
     this.carRoot.position.x = THREE.MathUtils.damp(this.carRoot.position.x, this.desiredStageX, this.positionDamping, delta);
     this.currentLiftY = THREE.MathUtils.damp(this.currentLiftY, this.desiredLiftY, this.environmentDamping, delta);
@@ -779,12 +705,7 @@ export class VehicleSceneController {
 
     this.camera.position.copy(this.cameraPosition);
     this.camera.lookAt(this.cameraTarget);
-
-    if (this.composer) {
-      this.composer.render();
-    } else {
-      this.renderer.render(this.scene, this.camera);
-    }
+    this.renderer.render(this.scene, this.camera);
   }
 
   dispose() {
@@ -793,7 +714,6 @@ export class VehicleSceneController {
 
     this.scene.traverse((child) => {
       if (!child.isMesh) return;
-
       child.geometry?.dispose();
 
       const materials = Array.isArray(child.material) ? child.material : [child.material];
@@ -805,7 +725,6 @@ export class VehicleSceneController {
       });
     });
 
-    this.composer?.dispose?.();
     this.renderer.dispose();
   }
 }
@@ -822,10 +741,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 export function setupVehicleScrollNarrative(sceneController, profile) {
   const sections = VEHICLE_CONFIG.sections
-    .map((section) => ({
-      ...section,
-      element: document.getElementById(section.id)
-    }))
+    .map((section) => ({ ...section, element: document.getElementById(section.id) }))
     .filter((section) => section.element);
 
   if (!sections.length) return () => {};
@@ -843,7 +759,6 @@ export function setupVehicleScrollNarrative(sceneController, profile) {
   const activateSection = (index) => {
     const section = sections[index];
     if (!section || activeSectionIndex === index) return;
-
     activeSectionIndex = index;
     document.body.dataset.section = section.id;
     sceneController.setDesiredPose(poses[index]);
@@ -874,8 +789,7 @@ export function setupVehicleScrollNarrative(sceneController, profile) {
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           const progress = profile.reducedMotion ? (self.progress >= 0.5 ? 1 : 0) : self.progress;
-          const mixedPose = sceneController.mixPoses(poses[fromIndex], poses[toIndex], progress);
-          sceneController.setDesiredPose(mixedPose);
+          sceneController.setDesiredPose(sceneController.mixPoses(poses[fromIndex], poses[toIndex], progress));
           document.body.dataset.section = progress < 0.5 ? sections[fromIndex].id : section.id;
         },
         onLeave: () => activateSection(toIndex),
@@ -937,7 +851,6 @@ export async function bootstrapVehicle3D({
     window.addEventListener('resize', handleResize);
     await sceneController.loadModel();
     handleResize();
-
     destroyScroll = setupVehicleScrollNarrative(sceneController, profile) || (() => {});
     onReady(sceneController);
 
@@ -963,46 +876,24 @@ export async function bootstrapVehicle3D({
 }
 ```
 
-### App entry example
+### Next.js integration example
 
-```js
-import { bootstrapVehicle3D } from './vehicle3d/bootstrap-vehicle3d.js';
-
-let vehicle3DHandle = null;
-
-bootstrapVehicle3D({
-  onProgress: (value) => {
-    document.body.style.setProperty('--vehicle-load-progress', value);
-  },
-  onReady: (sceneController) => {
-    vehicle3DHandle = sceneController;
-    document.body.classList.add('is-ready');
-  }
-});
-```
-
-### React integration example
+Use a client component and initialize on mount:
 
 ```jsx
-import { useEffect, useRef } from 'react';
-import { bootstrapVehicle3D } from './vehicle3d/bootstrap-vehicle3d.js';
+'use client';
 
-export function VehicleHero() {
+import { useEffect, useRef } from 'react';
+import { bootstrapVehicle3D } from '@/vehicle3d/bootstrap-vehicle3d.js';
+
+export default function VehicleCanvas() {
   const canvasRef = useRef(null);
 
   useEffect(() => {
     let handle = null;
     let cancelled = false;
 
-    bootstrapVehicle3D({
-      canvas: canvasRef.current,
-      onReady: (sceneController) => {
-        if (cancelled) {
-          sceneController.dispose();
-          return;
-        }
-      }
-    }).then((result) => {
+    bootstrapVehicle3D({ canvas: canvasRef.current }).then((result) => {
       if (cancelled) {
         result?.dispose?.();
         return;
@@ -1020,177 +911,42 @@ export function VehicleHero() {
 }
 ```
 
-### DOM contract example
+If the page uses the App Router and the scene is heavy, prefer loading this component only in the route that needs it.
 
-```html
-<div id="scene-shell" aria-hidden="true">
-  <canvas id="experience-canvas"></canvas>
-</div>
+## Animation Tuning
 
-<section id="prelude" class="panel"></section>
-<section id="hero" class="panel"></section>
-<section id="performance" class="panel"></section>
-<section id="engineering" class="panel"></section>
-<section id="finale" class="panel"></section>
-```
+Tune in this order:
 
-```css
-#scene-shell {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-}
+1. `desiredLength`
+2. wheel root regex
+3. wheel spin axis
+4. clip names
+5. section camera values
+6. section target values
+7. rotation and stage offsets
+8. exposure
+9. damping
+10. optional drift and postprocessing
 
-#experience-canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
+### Normalization
 
-.panel {
-  position: relative;
-  min-height: 100vh;
-  z-index: 2;
-}
-```
+Use `desiredLength` when the car is globally too large or too small. Do not use it to fix a single bad shot.
 
-## Animation Tuning Guide
+### Section pose knobs
 
-Use this section after the baseline implementation is working.
+Each section gives you `camera`, `target`, `rotationY`, `stageX`, `liftY`, `floorOffsetY`, `exposure`, and `cues`.
 
-The animation stack has four layers:
+- `camera.x`: orbit left/right
+- `camera.y`: height
+- `camera.z`: distance
+- `target`: shifts visual focus without moving the camera rig
+- `rotationY`: rotates the car itself
+- `stageX`: creates negative space for layout
+- `liftY`: body height on stage
+- `floorOffsetY`: floor placement independent from the car
+- `exposure`: strong mood control
 
-1. Stage normalization.
-2. Section pose selection.
-3. Damped interpolation toward desired values.
-4. Overlay motion such as wheel spin, clip cues, and optional drift.
-
-When something feels wrong, identify the layer first. Do not blindly tweak random numbers.
-
-### Layer 1: Stage normalization
-
-Relevant code:
-
-```js
-const alignedLength = Math.max(alignedSize.x, alignedSize.z);
-this.modelScale = VEHICLE_CONFIG.desiredLength / alignedLength;
-this.radius = VEHICLE_CONFIG.desiredLength * 0.5;
-```
-
-What it does:
-
-- Forces different car models into a consistent staging scale.
-- Makes camera values reusable.
-
-Adjust `desiredLength` when:
-
-- The entire car feels too big or too small across every section.
-
-Do not use `desiredLength` when:
-
-- Only one section framing is wrong.
-
-### Layer 2: Section poses
-
-Each section has:
-
-- `camera`
-- `target`
-- `rotationY`
-- `stageX`
-- `liftY`
-- `floorOffsetY`
-- `exposure`
-- `cues`
-
-#### `camera`
-
-Example:
-
-```js
-camera: { x: -0.18, y: 0.24, z: 2.04 }
-```
-
-Meaning:
-
-- `x`: left/right orbit position.
-- `y`: camera height.
-- `z`: distance to subject.
-
-Typical tuning:
-
-- More negative `x`: stronger left hero angle.
-- More positive `x`: stronger right hero angle.
-- Higher `y`: more elegant showroom feel.
-- Lower `z`: tighter and more aggressive crop.
-
-#### `target`
-
-Example:
-
-```js
-target: { x: 0, y: 0.18, z: 0 }
-```
-
-Meaning:
-
-- The point the camera looks at.
-- This is often the most powerful composition control after `camera`.
-
-Typical tuning:
-
-- Raise `target.y` if you want more windshield/roof emphasis.
-- Move `target.x` if the hood, front door, or rear body should anchor the shot.
-
-#### `rotationY`
-
-Meaning:
-
-- Rotates the vehicle itself.
-
-Use it when:
-
-- The layout is correct but the body angle feels unheroic.
-
-#### `stageX`
-
-Meaning:
-
-- Slides the car left or right independently from the camera.
-
-Use it when:
-
-- The page layout needs negative space for copy.
-
-#### `liftY`
-
-Meaning:
-
-- Moves the body vertically.
-
-Use it when:
-
-- The car should feel grounded or slightly pedestal-mounted.
-
-#### `floorOffsetY`
-
-Meaning:
-
-- Moves the floor plane independently.
-
-Use it when:
-
-- You want to preserve the car placement but make the stage feel higher or lower.
-
-#### `exposure`
-
-Meaning:
-
-- Controls tone-mapping brightness.
-
-This is one of the strongest mood knobs. Small changes can noticeably shift the premium feel.
-
-### Layer 3: Pose blending
+### Pose blending
 
 Relevant code:
 
@@ -1198,22 +954,9 @@ Relevant code:
 const t = THREE.MathUtils.smootherstep(progress, 0, 1);
 ```
 
-What it does:
+This keeps transitions soft instead of robotic. If motion is too floaty, increase damping or reduce pose distance. If too stiff, lower damping slightly.
 
-- Converts scroll progress into a softer interpolation curve.
-- Prevents hard robotic pose transitions.
-
-If the scene feels too floaty:
-
-- Increase damping.
-- Reduce the distance between adjacent poses.
-
-If the scene feels too rigid:
-
-- Lower damping slightly.
-- Keep `smootherstep`.
-
-### Layer 4: Damping
+### Damping
 
 Relevant knobs:
 
@@ -1223,24 +966,13 @@ this.rotationDamping = 5;
 this.environmentDamping = 5.6;
 ```
 
-Interpretation:
+- `positionDamping`: camera and stage translation feel
+- `rotationDamping`: body angle catch-up
+- `environmentDamping`: lift, floor, exposure settling
 
-- `positionDamping`: camera and stage translation response.
-- `rotationDamping`: body rotation catch-up.
-- `environmentDamping`: lift, floor, and exposure settling.
+Higher values snap faster. Lower values feel heavier.
 
-Higher values:
-
-- Snappier.
-- More UI-like.
-
-Lower values:
-
-- Heavier.
-- More cinematic.
-- Easier to make mushy if pushed too far.
-
-## Wheel Spin Tuning
+### Wheel spin
 
 Relevant code:
 
@@ -1249,23 +981,9 @@ const spinStep = this.wheelSpinSpeed * Math.min(delta, 1 / 45);
 this.wheelSpinQuaternion.setFromAxisAngle(wheelSpinAxis, this.wheelSpinAngle);
 ```
 
-Important rule:
+Use `wheelSpinSpeed` to control scene energy. If the wheels do not spin, check candidate names, regex, axis, and whether clip playback is overwriting wheel transforms.
 
-- Wheel spin sells continuous energy during scroll.
-
-Tune:
-
-- Increase `wheelSpinSpeed` for a more energized scene.
-- Decrease it for a slower luxury feel.
-
-If wheels do not move:
-
-1. Log candidate node names.
-2. Confirm the regex matches the real wheel parents.
-3. Confirm the axis is correct.
-4. Confirm clip playback is not overwriting wheel transforms after spin is applied.
-
-## GLTF Clip Cue Tuning
+### Clip cues
 
 Relevant code:
 
@@ -1274,35 +992,69 @@ action.timeScale = VEHICLE_CONFIG.cueSpeedMultiplier;
 action.play();
 ```
 
-Tune:
+- `cueSpeedMultiplier`: clip intensity
+- `cues`: section-to-clip mapping
 
-- `cueSpeedMultiplier` if clip motion feels sluggish or frantic.
-- Section cue arrays if the wrong clip is tied to the wrong story beat.
+If cue names are wrong, dump `gltf.animations.map((clip) => clip.name)` and fix config. Do not guess.
 
-If cue names are wrong:
+### Fallback when clip names do not match
 
-- Dump `gltf.animations.map((clip) => clip.name)`
-- Fix config
-- Do not guess
+Use this flow:
 
-## Idle Drift Tuning
-
-Relevant code:
+1. Log the real clip names:
 
 ```js
-Math.sin(elapsed * VEHICLE_CONFIG.hoverSpeed) * (this.radius * VEHICLE_CONFIG.hoverAmplitude)
+console.table(gltf.animations.map((clip) => ({ name: clip.name, duration: clip.duration })));
 ```
 
-Meaning:
+2. Compare each configured cue against the real list.
+3. Rename the cues in config to the real clip names.
+4. If the new model has no useful clips, set `cues: []` temporarily and finish the camera transfer first.
+5. If multiple clips are similar, test them one by one before assigning them to story sections.
 
-- Adds subtle showroom drift.
+Safe temporary fallback:
 
-Use carefully:
+```js
+sections: [
+  { id: 'hero', camera: {...}, target: {...}, rotationY: 0, exposure: 1.2, cues: [] }
+]
+```
 
-- Too much drift makes the car feel toy-like.
-- Premium automotive scenes often need almost none.
+Do not leave invented clip names in config.
 
-## Reduced Motion
+### Fallback when wheel root regex does not match
+
+Use this flow:
+
+1. Log likely wheel nodes:
+
+```js
+const wheelCandidates = [];
+gltf.scene.traverse((node) => {
+  if (/wheel|rim|tire/i.test(node.name)) wheelCandidates.push(node.name);
+});
+console.log(wheelCandidates);
+```
+
+2. Identify the parent nodes that should rotate together with the tire and rim.
+3. Replace `wheelRootPattern` with a regex that matches those parent nodes.
+4. If names are inconsistent, use a predicate function instead of a regex.
+
+Regex fallback example:
+
+```js
+wheelRootPattern: /front_wheel|rear_wheel|rim|tire/i
+```
+
+Predicate fallback example:
+
+```js
+const isWheelRoot = (node) => /wheel|rim/i.test(node.name) && node.children.length > 0;
+```
+
+If wheels rotate around the wrong axis after matching the nodes, fix `wheelSpinAxis` before touching anything else.
+
+### Reduced motion
 
 Relevant code:
 
@@ -1310,188 +1062,50 @@ Relevant code:
 const progress = profile.reducedMotion ? (self.progress >= 0.5 ? 1 : 0) : self.progress;
 ```
 
-Meaning:
+Keep this behavior unless you have a deliberate accessibility alternative.
 
-- Users with reduced motion get stepped transitions instead of constant blended movement.
+## Optimization QA
 
-Do not remove without an accessibility reasoned alternative.
+### Visual QA
 
-## Postprocessing
+- door seams still align
+- body reflections still read correctly
+- wheel silhouettes are not obviously faceted
+- glass and paint surfaces do not show unacceptable artifacts
+- hero shots still feel premium
+- texture sharpness is still acceptable in intended hero views
 
-Only use bloom and extra passes when device headroom allows it.
+### Animation QA
 
-If the scene looks washed out:
+- `gltf.animations.length` still matches the source asset
+- clip names are unchanged
+- clip durations still look sane
+- wheel roots still exist and still match the runtime pattern
+- wheel spin still works
+- cue playback still works
+- rest-pose restore still works before cue playback
 
-- Lower exposure first
-- Re-check bloom strength
-- Re-check fill/rim intensities
-
-Do not immediately remove all postprocessing unless profiling shows it is the real bottleneck.
-
-## Safe Tuning Order
-
-When adapting a new car model, use this order:
-
-1. Optimize the asset if needed.
-2. Fix scale with `desiredLength`.
-3. Fix wheel root matching.
-4. Fix wheel spin axis.
-5. Fix clip names.
-6. Tune section camera values.
-7. Tune section targets.
-8. Tune body rotation and stage offset.
-9. Tune exposure.
-10. Tune damping.
-11. Tune optional drift and postprocessing.
-
-This avoids masking one problem with another.
-
-## Asset Optimization Playbook
-
-Use this section whenever the incoming GLB is larger than `5MB`, or when animation smoothness is unstable on mid-tier hardware.
-
-### Goal
-
-Reduce load cost and runtime stress before the model reaches the animation layer.
-
-### Why the `5MB` gate exists
-
-Large GLBs usually imply one or more of these:
-
-- Oversized textures
-- Uncompressed geometry
-- Excessive draw calls
-- Dense meshes that the real camera distance does not need
-
-This skill treats `5MB` as the point where optimization stops being optional.
-
-### Required first step
-
-Measure the asset:
-
-```bash
-node skills/threejs-car-animation-transfer/scripts/check-glb-size.mjs src/assets/models/car.glb
-```
-
-If the result is `OVER_LIMIT`, optimize before integration.
-
-### Install the toolchain
-
-```bash
-npm install -D @gltf-transform/cli
-```
-
-### Inspect before changing anything
-
-```bash
-npx gltf-transform inspect src/assets/models/car.glb
-```
-
-Capture:
-
-- File size
-- Largest texture dimensions
-- Mesh count
-- Primitive count
-- Animation clip count
-- Existing compression extensions
-
-### Preferred compression strategy
-
-This skill prefers Meshopt because the runtime code already expects:
-
-```js
-loader.setMeshoptDecoder(MeshoptDecoder);
-```
-
-That keeps the transfer path coherent.
-
-### Baseline pipeline
-
-Step 1: geometry compression
-
-```bash
-npx gltf-transform meshopt src/assets/models/car.glb src/assets/models/car.meshopt.glb --level medium
-```
-
-Step 2: texture conversion
-
-```bash
-npx gltf-transform webp src/assets/models/car.meshopt.glb src/assets/models/car.optimized.glb
-```
-
-Step 3: inspect again
-
-```bash
-npx gltf-transform inspect src/assets/models/car.optimized.glb
-```
-
-### If the model is still too heavy
-
-Resize textures:
-
-```bash
-npx gltf-transform resize src/assets/models/car.optimized.glb src/assets/models/car.optimized-2k.glb --width 2048 --height 2048
-```
-
-Inspect again:
-
-```bash
-npx gltf-transform inspect src/assets/models/car.optimized-2k.glb
-```
-
-If still too large, repeat at `1024` after visual QA.
-
-### Visual QA after optimization
-
-Check:
-
-- Door seams still align
-- Body reflections still look clean
-- Wheel silhouettes are not obviously faceted
-- Glass and painted surfaces do not show ugly texture artifacts
-- Hero shots still feel premium
-- Clip playback still works
-
-### Performance QA after optimization
-
-Check:
-
-- Load is faster
-- Scroll hitching is reduced
-- Animation mixer playback stays stable
-- Lower-power devices are less stressed
-- Mobile still renders a centered car with wheel spin
-
-### Reject an optimization pass when
-
-- Chrome body panels visibly lose curvature
-- Tire silhouette becomes angular in hero framing
-- Important animation pivots break
-- Texture artifacts become obvious at the intended viewing distance
-
-The target is not the smallest file. The target is the best quality-per-byte result for the real scene.
-
-## Deployment Rules
-
-- If the app deploys under a subpath, set the Vite `base`.
-- Always resolve the GLB with `new URL(..., import.meta.url).href`.
-- Do not hardcode `/assets/...` for the model path.
+Reject an optimization pass when body curvature degrades, tire silhouette becomes angular, clip names disappear, pivots break, texture artifacts become obvious, or animation playback no longer matches the source model.
 
 ## Validation Checklist
 
 After transfer, verify all of the following:
 
-1. The optimized GLB is at or below budget, or has a documented exception.
-2. `sceneController.wheelSpinTargets.length` matches the expected wheel count.
-3. Logged wheel target names match the real wheel parent objects.
-4. Clip names in config actually exist in `gltf.animations`.
-5. `npm run build` passes.
-6. The canvas is nonblank.
-7. The car is centered.
-8. All wheels rotate.
-9. Scroll sections change pose and cues smoothly.
-10. Route unmount or teardown does not leave a live RAF loop.
-11. Route unmount or teardown does not leave orphaned `ScrollTrigger`s.
+1. The source GLB was measured before transfer.
+2. If the file was larger than `5MB`, the user was asked before optimization.
+3. The original GLB is still preserved.
+4. The chosen runtime GLB is documented.
+5. Wheel target count matches the expected wheel count.
+6. Logged wheel target names match the actual wheel parent objects.
+7. Clip names in config exist in `gltf.animations`.
+8. Clip count and playback behavior still match the source model.
+9. Texture detail is still acceptable in intended hero views.
+10. `npm run build` passes.
+11. The canvas is nonblank.
+12. The car is centered.
+13. All wheels rotate.
+14. Scroll sections change pose and cues smoothly.
+15. Route teardown leaves no live RAF loop.
+16. Route teardown leaves no orphaned `ScrollTrigger`s.
 
-If any validation step fails, do not call the transfer complete.
+If any step fails, do not call the transfer complete.
